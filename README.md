@@ -2,4 +2,4 @@
 
 videoplayer demo
 
-FFMPeg decoder + Opengl render
+Qt5 + FFMPeg decoder + Opengl render
