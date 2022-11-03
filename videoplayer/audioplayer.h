@@ -7,6 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <QString>
+#include <functional>
 
 class IHalAudioOutput;
 class AudioResample;
@@ -28,6 +29,7 @@ public:
     void stop();
     void clear();
     void seek(const double pos);
+    void setSyncPtsCallback(std::function<void(long long)> callback);
 
     long long getPts();
     long long getTotalMs() const;
@@ -47,6 +49,8 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_cv;
     double m_timeBase;
+
+    std::function<void(long long)> m_syncPtsCallback;
 };
 
 #endif // AUDIOPLAYER_H

@@ -118,6 +118,11 @@ void AudioPlayer::seek(const double pos)
     }
 }
 
+void AudioPlayer::setSyncPtsCallback(std::function<void (long long)> callback)
+{
+    m_syncPtsCallback = callback;
+}
+
 long long AudioPlayer::getPts()
 {
     return m_pts;
@@ -161,6 +166,9 @@ void AudioPlayer::_run()
         //减去缓存中未播放的时间 单位ms
         m_pts = (m_decoder->getPts() * m_timeBase) - m_audioOutput->getNoPlayMs();
 
+        if(m_syncPtsCallback){
+            m_syncPtsCallback(m_pts);
+        }
         //resample
         int nSize = m_resample->resample(pFrame,pcm);
         //  release frame

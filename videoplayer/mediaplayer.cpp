@@ -23,11 +23,17 @@ bool MediaPlayer::Open(const char *strUrl, IVideoCall *pVideoCall)
         return false;
 
     m_audioPlayer.reset(new AudioPlayer);
-    m_audioPlayer->open(strUrl);
+    bool audioOk = m_audioPlayer->open(strUrl);
 
     m_videoPlayer.reset(new VideoPlayer);
-    m_videoPlayer->open(strUrl, pVideoCall);
-    return true;
+    bool videoOk = m_videoPlayer->open(strUrl, pVideoCall);
+
+    if(audioOk && videoOk){
+        m_audioPlayer->setSyncPtsCallback([this](long long pts){
+           m_videoPlayer->setSyncPts(pts);
+        });
+    }
+    return audioOk || videoOk;
 }
 
 void MediaPlayer::start()

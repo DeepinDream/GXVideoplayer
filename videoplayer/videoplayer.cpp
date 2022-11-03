@@ -9,9 +9,9 @@
 #include <QElapsedTimer>
 
 void LimitInterval(int &v)
-    { // pts <= 50，限制帧率不要太高
-        v = (v >= 20 ? v : 20);
-    }
+{ // pts <= 50，限制帧率不要太高
+    v = (v >= 20 ? v : 20);
+}
 
 VideoPlayer::VideoPlayer()
     : m_videoCall(NULL)
@@ -146,6 +146,57 @@ void VideoPlayer::_run()
     long long prePts = 0;
     QElapsedTimer elapsdTimer;
 
+    auto syncPtsAloneFunc = [&, this]{
+        framCount++;
+        if(framCount == 1){
+            prePts = m_pts;
+            elapsdTimer.start();
+            //            qDebug() << "framCount: " << framCount << ", Video frame sleep: " << m_frameIntervalmsReal;
+        }
+        else if(framCount >= m_cumulaMax){
+            auto total = framCount - 1;
+            auto ms = elapsdTimer.restart() / total;
+            long long syncPts = m_syncPts;
+            long long pts = m_pts * m_timeBaseMs;
+            if(syncPts > 0 && syncPts < pts){
+                int newIntervalms = (pts - syncPts) / total * 2;
+                LimitInterval(newIntervalms);
+                m_frameIntervalmsReal = newIntervalms;
+                qDebug() << "framCount: " << framCount << ", total: " << total
+                         << ", pts: " << pts
+                         << ", syncPts: " << syncPts
+                         << ", newIntervalms: " << newIntervalms;
+            }
+            else{
+                auto avg = (m_pts - prePts) * m_timeBaseMs / total;
+                int newIntervalms = m_frameIntervalmsReal;
+                if(m_pts > prePts){
+                    newIntervalms = m_frameIntervalmsReal - (ms - avg) / 2;
+                }
+                LimitInterval(newIntervalms);
+                m_frameIntervalmsReal = newIntervalms;
+                //            qDebug() << "framCount: " << framCount << ", total: " << total << ", ms: " << ms << ", ms: " << ms
+                //                     << ", m_pts: " << m_pts
+                //                     << ", prePts: " << prePts
+                //                     << ", m_timeBaseMs: " << m_timeBaseMs
+                //                     << ", avg: " << avg
+                //                     << ", newIntervalms: " << newIntervalms
+                //                     << ", Video frame sleep: " << m_frameIntervalmsReal;
+            }
+            framCount = 0;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(m_frameIntervalmsReal));
+    };
+
+    auto syncPtsByAudio = [&, this](){
+        long long syncPts = m_syncPts;
+        long long pts = m_pts * m_timeBaseMs;
+        if(syncPts > 0 && syncPts < pts){
+            std::this_thread::sleep_for(std::chrono::milliseconds(pts - syncPts));
+        }
+    };
+
     while (m_running) {
         {
             std::unique_lock<std::mutex> lk(m_mutex);
@@ -176,49 +227,8 @@ void VideoPlayer::_run()
         //  release frame
         FFmpegFreeFrame(&pFrame);
 
-//        int syncPts = m_syncPts;
-//        m_syncPts = 0;
-//        if(syncPts > 0 && syncPts < m_pts){
-//            std::this_thread::sleep_for(std::chrono::milliseconds(syncPts));
-//        }
-
-
-//        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-//        auto end = std::chrono::system_clock::now();
-//        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);	// 毫秒
-//        int tmDiff = duration.count();
-//        if(tmDiff < m_frameIntervalms){
-//            qDebug() << "Video frame sleep: " << m_frameIntervalms - tmDiff;
-//            std::this_thread::sleep_for(std::chrono::milliseconds(m_frameIntervalms - tmDiff));
-//        }
-        framCount++;
-        if(framCount == 1){
-            prePts = m_pts;
-            elapsdTimer.start();
-            qDebug() << "framCount: " << framCount << ", Video frame sleep: " << m_frameIntervalmsReal;
-        }
-        else if(framCount >= m_cumulaMax){
-            auto total = framCount - 1;
-            auto ms = elapsdTimer.restart() / total;
-            auto avg = (m_pts - prePts) * m_timeBaseMs / total;
-            int newIntervalms = m_frameIntervalmsReal;
-            if(m_pts > prePts){
-                newIntervalms = m_frameIntervalmsReal - (ms - avg) / 2;
-            }
-            LimitInterval(newIntervalms);
-            m_frameIntervalmsReal = newIntervalms;
-            qDebug() << "framCount: " << framCount << ", total: " << total << ", ms: " << ms << ", ms: " << ms
-                     << ", m_pts: " << m_pts
-                     << ", prePts: " << prePts
-                     << ", m_timeBaseMs: " << m_timeBaseMs
-                     << ", avg: " << avg
-                     << ", newIntervalms: " << newIntervalms
-                     << ", Video frame sleep: " << m_frameIntervalmsReal;
-
-            framCount = 0;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(m_frameIntervalmsReal));
+                syncPtsAloneFunc();
+//        syncPtsByAudio();
     }
 
     delete []pcm;

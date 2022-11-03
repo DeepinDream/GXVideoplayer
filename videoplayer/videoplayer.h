@@ -41,7 +41,7 @@ private:
     long long m_pts;
     int m_frameIntervalms;
     std::atomic_llong m_syncPts; //同步时间，由外部传入
-    const int m_cumulaMax = 64;
+    const int m_cumulaMax = 30;
     double m_timeBaseMs;
     int m_frameIntervalmsReal;
 
