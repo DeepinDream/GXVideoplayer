@@ -1,0 +1,8 @@
+﻿/build**
+/videoplayer/debug/
+/videoplayer/release/
+*.vcxproj
+*.filters
+*.user
+ui_*.h
+.qmake.stash
