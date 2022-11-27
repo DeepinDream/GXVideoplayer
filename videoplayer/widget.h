@@ -24,6 +24,7 @@ public:
 public slots:
     void HandleOpenFile();
 protected:
+    void closeEvent(QCloseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private slots:

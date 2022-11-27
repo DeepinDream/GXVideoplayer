@@ -227,8 +227,8 @@ void VideoPlayer::_run()
         //  release frame
         FFmpegFreeFrame(&pFrame);
 
-                syncPtsAloneFunc();
-//        syncPtsByAudio();
+                //syncPtsAloneFunc();
+        syncPtsByAudio();
     }
 
     delete []pcm;

@@ -81,6 +81,12 @@ void Widget::HandleOpenFile()
     m_player->start();
 }
 
+void Widget::closeEvent(QCloseEvent* event)
+{
+    SetPlay(false);
+    m_player->stop();
+}
+
 void Widget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     Q_UNUSED(event)
