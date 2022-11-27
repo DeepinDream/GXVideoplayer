@@ -3,11 +3,11 @@
 #include <Windows.h>
 #include <QString>
 
-class C_avcodec_ExportFuncs;
-class C_avformat_ExportFuncs;
-class C_avutil_ExportFuncs;
-class C_swresample_ExportFuncs;
-class C_swscale_ExportFuncs;
+struct C_avcodec_ExportFuncs;
+struct C_avformat_ExportFuncs;
+struct C_avutil_ExportFuncs;
+struct C_swresample_ExportFuncs;
+struct C_swscale_ExportFuncs;
 
 class FFMPegWrapper
 {
