@@ -111,15 +111,16 @@ bool MediaDemuxer::seek(double dPos)
 
     m_avformatFuncs.avformat_flushPtr(m_formatCtx);
 
-    long long nSeekPos = 0;
+    double sec = m_totalTimeMs * dPos / 1000;
+
     int nRet = -1;
     if(m_videoStreamIdx >= 0){
-        nSeekPos = m_formatCtx->streams[m_videoStreamIdx]->duration * dPos;
-        nRet = m_avformatFuncs.av_seek_framePtr(m_formatCtx,m_videoStreamIdx,nSeekPos,AVSEEK_FLAG_BACKWARD|AVSEEK_FLAG_FRAME);
+        int64_t pts = sec / r2d(m_formatCtx->streams[m_videoStreamIdx]->time_base);
+        nRet = m_avformatFuncs.av_seek_framePtr(m_formatCtx,m_videoStreamIdx, pts,AVSEEK_FLAG_BACKWARD|AVSEEK_FLAG_FRAME);
     }
     else if(m_audioStreamIdx >= 0){
-        nSeekPos = m_formatCtx->streams[m_audioStreamIdx]->duration * dPos;
-        nRet = m_avformatFuncs.av_seek_framePtr(m_formatCtx,m_audioStreamIdx,nSeekPos,AVSEEK_FLAG_BACKWARD|AVSEEK_FLAG_FRAME);
+        int64_t pts = sec / r2d(m_formatCtx->streams[m_videoStreamIdx]->time_base);
+        nRet = m_avformatFuncs.av_seek_framePtr(m_formatCtx,m_audioStreamIdx, pts,AVSEEK_FLAG_BACKWARD|AVSEEK_FLAG_FRAME);
     }
     return (nRet >= 0)?true:false;
 }
