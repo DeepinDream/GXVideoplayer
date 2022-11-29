@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDateTime>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -16,6 +17,8 @@ Widget::Widget(QWidget *parent)
 
     m_pVideoCall = new VideoRender(ui->Video);
     m_player = std::make_unique<MediaPlayer>();
+
+    _setTimeElapsedText(0, 0);
 
     startTimer(30);
 }
@@ -47,6 +50,8 @@ void Widget::timerEvent(QTimerEvent *event)
     auto pos = (double)pts / (double)totalTime;
     int v = ui->horizontalSlider->maximum() * pos;
     ui->horizontalSlider->setValue(v);
+
+    _setTimeElapsedText(pts, totalTime);
 }
 
 void Widget::SetPlay(bool isPlay)
@@ -100,6 +105,14 @@ void Widget::ConnectUI()
 {
     connect(ui->pushButton,&QPushButton::clicked,this,&Widget::HandleOpenFile);
     connect(ui->horizontalSlider, &MySlider::sgValueChangeByUser, this, &Widget::on_valueChangedByUser);
+}
+
+void Widget::_setTimeElapsedText(const long long ptsMs, const long long totalMs)
+{
+    QString curTimeStr = QDateTime::fromMSecsSinceEpoch(ptsMs, Qt::UTC).toString("hh:mm:ss");
+    QString totalTimeStr = QDateTime::fromMSecsSinceEpoch(totalMs, Qt::UTC).toString("hh:mm:ss");
+    QString timeElapsed = QString("%1 / %2").arg(curTimeStr).arg(totalTimeStr);
+    ui->playTimeElapsedlabel->setText(timeElapsed);
 }
 
 void Widget::on_BtnStart_clicked(bool checked)

@@ -34,6 +34,7 @@ private slots:
 
 private:
     void ConnectUI();
+    void _setTimeElapsedText(const long long ptsMs, const long long totalMs);
 
 private:
     Ui::Widget *ui;
