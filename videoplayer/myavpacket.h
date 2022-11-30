@@ -10,6 +10,7 @@ class MyAVPacket
 public:
     MyAVPacket();
     ~MyAVPacket();
+    void reset();
     AVPacket* operator()(){return m_packet;}
 
 private:

@@ -129,6 +129,7 @@ AVPacket *MediaDemuxer::readPacket()
 {
     CHECK_FORMATCONTEXT(nullptr);
 
+    m_packet->reset();
     AVPacket* pkt = (*m_packet)();
     int nRet = m_avformatFuncs.av_read_framePtr(m_formatCtx, pkt);
     if(nRet!=0)
