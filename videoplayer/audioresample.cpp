@@ -20,11 +20,12 @@ bool AudioResample::open(AVCodecParameters *pPara)
 {
     if(!pPara)
         return false;
+    m_nOutFormat = pPara->format == AV_SAMPLE_FMT_FLTP ? AV_SAMPLE_FMT_S16 : m_nOutFormat;
     m_pSwrctx = m_swresampleFuncs.swr_alloc_set_optsPtr(m_pSwrctx,
-                                                        m_avutilFuncs.av_get_default_channel_layoutPtr(2),                  // 输出格式
+                                                        pPara->channel_layout,                  // 输出格式
                                                         (AVSampleFormat)m_nOutFormat,                                       // 输出样本格式
                                                         pPara->sample_rate,                                                 // 输出采样率
-                                                        m_avutilFuncs.av_get_default_channel_layoutPtr(pPara->channels),    // 输入格式
+                                                        pPara->channel_layout,    // 输入格式
                                                         (AVSampleFormat)pPara->format,
                                                         pPara->sample_rate,
                                                         0,0);

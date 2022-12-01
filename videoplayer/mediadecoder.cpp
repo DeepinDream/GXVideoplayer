@@ -65,6 +65,43 @@ bool MediaDecoder::open(AVCodecParameters *pPara)
     return true;
 }
 
+bool MediaDecoder::openAudio(AVCodecParameters* pPara, int nSampleRate, int nChannels)
+{
+    if (!pPara)
+        return false;
+    close();
+
+    // 找到解码器
+    AVCodec* pCodec = m_avcodecFuncs.avcodec_find_decoderPtr(pPara->codec_id);
+    if (!pCodec)
+    {
+        m_avcodecFuncs.avcodec_parameters_freePtr(&pPara);
+        qDebug() << "can't find avcodec decoder:" << pPara->codec_id;
+        return false;
+    }
+    qDebug() << "find avcodec decoder:" << pPara->codec_id;
+
+    m_pCodecContext = m_avcodecFuncs.avcodec_alloc_context3Ptr(pCodec);
+
+    //配置codec context 参数
+    m_avcodecFuncs.avcodec_parameters_to_contextPtr(m_pCodecContext, pPara);
+    //m_pCodecContext->thread_count = 8; //8 threads decode
+
+    int ret = m_avcodecFuncs.avcodec_open2Ptr(m_pCodecContext, pCodec, nullptr); //check
+
+    if (ret != 0)
+    {
+        m_avcodecFuncs.avcodec_free_contextPtr(&m_pCodecContext);
+        char buf[1024] = { 0 };
+        m_avutilFuncs.av_strerrorPtr(ret, buf, sizeof(buf) - 1);
+        qDebug() << "avcodec_open2 fail:" << buf;
+        return false;
+    }
+
+    qDebug() << "avcodec_open2 success";
+    return true;
+}
+
 void MediaDecoder::close()
 {
     if(m_pCodecContext)

@@ -23,5 +23,6 @@ MyAVPacket::~MyAVPacket()
 void MyAVPacket::reset()
 {
     FFMPegWrapper::instance().get_avcodec_ExportFuncs().av_packet_unrefPtr(m_packet);
+    FFmpegFreePacket(&m_packet);
     m_packet = FFMPegWrapper::instance().get_avcodec_ExportFuncs().av_packet_allocPtr();
 }

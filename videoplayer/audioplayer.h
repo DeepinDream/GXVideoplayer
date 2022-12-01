@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <QString>
 #include <functional>
+#include "ffmpegwrapper/ffmpegdllfuncdef.h"
 
 class IHalAudioOutput;
 class AudioResample;
@@ -51,6 +52,8 @@ private:
     double m_timeBase;
 
     std::function<void(long long)> m_syncPtsCallback;
+
+    C_avutil_ExportFuncs m_avutilFuncs;
 };
 
 #endif // AUDIOPLAYER_H

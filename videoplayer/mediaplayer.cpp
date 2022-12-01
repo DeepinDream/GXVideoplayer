@@ -25,6 +25,8 @@ bool MediaPlayer::Open(const char *strUrl, IVideoCall *pVideoCall)
     m_audioPlayer.reset(new AudioPlayer);
     bool audioOk = m_audioPlayer->open(strUrl);
 
+    //return audioOk;
+
     m_videoPlayer.reset(new VideoPlayer);
     bool videoOk = m_videoPlayer->open(strUrl, pVideoCall);
 

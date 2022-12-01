@@ -25,6 +25,7 @@ public:
     MediaDecoder();
     ~MediaDecoder();
     bool open(AVCodecParameters* pPara);    // 打开解码器
+    bool openAudio(AVCodecParameters* pPara, int nSampleRate, int nChannels);
 
     void close();
     void clear();

@@ -4,6 +4,7 @@
 #include "audioresample.h"
 #include "halaudiooutput.h"
 #include "threadconfig.h"
+#include "ffmpegwrapper/ffmpegwrapper.h"
 #include <QDebug>
 
 AudioPlayer::AudioPlayer()
@@ -14,6 +15,7 @@ AudioPlayer::AudioPlayer()
 {
     m_resample = std::make_unique<AudioResample>();
     m_audioOutput = std::make_unique<HalAudioOutput>();
+    m_avutilFuncs = FFMPegWrapper::instance().get_avutil_ExportFuncs();
 }
 
 AudioPlayer::~AudioPlayer()
@@ -41,11 +43,17 @@ bool AudioPlayer::_open(AVCodecParameters *pPara, int nSampleRate, int nChannels
     m_decoder.reset(new MediaDecoder);
     m_pts = 0;
 
-    if(!m_resample->open(pPara))
-    {
-        qDebug()<<"AudioPlayer open failed.";
-        return false;
+    if (pPara->sample_rate == 0) {
+        pPara->sample_rate = nSampleRate;
     }
+    if (pPara->channels == 0) {
+        pPara->channels = nChannels;
+    }
+    if (pPara->bit_rate == 0) {
+        int bytePerSample = m_avutilFuncs.av_get_bytes_per_samplePtr((AVSampleFormat)pPara->format);
+        pPara->bit_rate = pPara->sample_rate * pPara->channels * bytePerSample;
+    }
+    pPara->channel_layout = m_avutilFuncs.av_get_default_channel_layoutPtr(pPara->channels);
 
     m_audioOutput->setSampleRate(nSampleRate);
     m_audioOutput->setChannels(nChannels);
@@ -54,8 +62,14 @@ bool AudioPlayer::_open(AVCodecParameters *pPara, int nSampleRate, int nChannels
         qDebug()<<"AudioOutput open failed.";
         return false;
     }
-    if(!m_decoder->open(pPara)){
+    if(!m_decoder->openAudio(pPara, nSampleRate, nChannels)){
         qDebug()<<"Audio Decoder open failed.";
+        return false;
+    }
+
+    if (!m_resample->open(pPara))
+    {
+        qDebug() << "AudioPlayer open failed.";
         return false;
     }
 
@@ -155,7 +169,7 @@ void AudioPlayer::_run()
             AVPacket* pck = m_demuxer->readAudioPacket();
             MediaDecoder::DecodeError ret = m_decoder->decodePktToFrame(pck, &pFrame);
             if(ret == MediaDecoder::DecodeError::ERROR_RECIVE_EOF){
-                m_playing = false;
+                //m_playing = false;
                 break;
             }
             if(ret != MediaDecoder::DecodeError::SUCCESS){
@@ -166,26 +180,26 @@ void AudioPlayer::_run()
         //减去缓存中未播放的时间 单位ms
         m_pts = (m_decoder->getPts() * m_timeBase) - m_audioOutput->getNoPlayMs();
 
-        if(m_syncPtsCallback){
+        if (m_syncPtsCallback) {
             m_syncPtsCallback(m_pts);
         }
         //resample
-        int nSize = m_resample->resample(pFrame,pcm);
+        int nSize = m_resample->resample(pFrame, pcm);
         //  release frame
         FFmpegFreeFrame(&pFrame);
 
         //play audio
-        while(m_playing)
+        while (m_playing)
         {
-            if(nSize<=0)
+            if (nSize <= 0)
                 break;
             int nFree = m_audioOutput->getFree();
-            if(nFree<nSize)
+            if (nFree < nSize)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
             }
-            m_audioOutput->write(pcm,nSize);
+            m_audioOutput->write(pcm, nSize);
             break;
         }
     }
